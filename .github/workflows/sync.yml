@@ -1,0 +1,44 @@
+name: Sync Opening Times Images
+
+on:
+  schedule:
+    # Every Monday at 03:00 UTC
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+    # Allow manual runs from the GitHub UI
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl
+
+      - name: Run image sync
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          bash sync-images.sh
+
+      - name: Commit and push changes
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          if git diff --quiet images/ index.html; then
+            echo "No image changes detected."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add images/ index.html
+            git commit -m "chore: update LCC opening times images (weekly sync)"
+            git push
+            echo "Images updated and pushed."
+          fi

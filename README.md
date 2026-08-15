@@ -42,6 +42,10 @@ You need `curl` and `sha256sum` (or `shasum` on macOS). Git Bash on Windows incl
 
 ## Scheduling weekly updates
 
+### GitHub Actions (automatic)
+
+This repository includes a GitHub Actions workflow (`.github/workflows/sync.yml`) that runs **every Monday at 03:00 UTC** automatically. It downloads all images, compares them via SHA256, and commits any changes back to the `main` branch. No setup required.
+
 ### Linux / macOS (cron)
 
 ```bash
