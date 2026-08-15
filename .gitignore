@@ -1,2 +1,3 @@
 .last-sync
 *.bak
+.playwright-mcp/
