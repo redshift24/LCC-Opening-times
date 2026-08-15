@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# sync-images.sh — Weekly sync of LCC opening times images
+# sync-images.sh - Weekly sync of LCC opening times images
 #
 # Compares each centre's opening-times image against the local copy in
 # ./images/. If the source image has changed (hash differs), the local
@@ -20,14 +20,13 @@ IMAGES_DIR="$SCRIPT_DIR/images"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
+mkdir -p "$IMAGES_DIR"
 cd "$SCRIPT_DIR"
 
 echo "=============================================="
-echo " LCC Opening Times — Image Sync"
+echo " LCC Opening Times - Image Sync"
 echo " Started: $(date)"
 echo "=============================================="
-
-mkdir -p "$IMAGES_DIR"
 
 # centre_slug | source_url
 CENTRES=(
