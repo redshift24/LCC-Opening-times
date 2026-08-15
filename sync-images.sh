@@ -80,7 +80,7 @@ echo "=============================================="
 
 # Record the timestamp so the webpage can display it
 SYNC_DATE_ISO="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-SYNC_DATE_HUMAN="$(date -u +"%d %b %Y, %H:%M UTC")"
+SYNC_DATE_HUMAN="$(date -u +"%d %b %Y")"
 echo "$SYNC_DATE_ISO" > "$SCRIPT_DIR/.last-sync"
 
 # Inject the human-readable timestamp into index.html
