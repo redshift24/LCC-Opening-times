@@ -79,12 +79,13 @@ echo " Finished: $(date)"
 echo "=============================================="
 
 # Record the timestamp so the webpage can display it
-SYNC_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-echo "$SYNC_DATE" > "$SCRIPT_DIR/.last-sync"
+SYNC_DATE_ISO="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+SYNC_DATE_HUMAN="$(date -u +"%d %b %Y, %H:%M UTC")"
+echo "$SYNC_DATE_ISO" > "$SCRIPT_DIR/.last-sync"
 
-# Inject the timestamp into index.html (update the date after "Last synced:")
+# Inject the human-readable timestamp into index.html
 if [ -f "$SCRIPT_DIR/index.html" ] && command -v sed >/dev/null 2>&1; then
-  sed -i "s|Last synced: [^<]*|Last synced: $SYNC_DATE|" "$SCRIPT_DIR/index.html"
+  sed -i "s|Last synced: [^<]*|Last synced: $SYNC_DATE_HUMAN|" "$SCRIPT_DIR/index.html"
 fi
 
 echo ""
