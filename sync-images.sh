@@ -6,6 +6,10 @@
 # ./images/. If the source image has changed (hash differs), the local
 # file is replaced with the fresh download.
 #
+# Safety: downloads are validated by magic bytes before being written. If the
+# server returns an HTML anti-bot/captcha page instead of an image, the file
+# is rejected and the local copy is left untouched.
+#
 # Schedule this once a week, e.g. via cron:
 #   0 3 * * 1 /path/to/sync-images.sh   (every Monday at 03:00)
 #
@@ -43,14 +47,39 @@ CENTRES=(
 changed=0
 unchanged=0
 failed=0
+rejected=0
+
+# Browser User-Agent: the LCC server sometimes serves an anti-bot captcha/redirect
+# HTML page instead of the image when it sees a default curl agent.
+USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+# Validate that a downloaded file is actually an image by checking its magic bytes.
+# Accepts PNG, JPEG, WebP, and GIF. Rejects HTML/text responses (e.g. captcha pages).
+is_valid_image() {
+  local file="$1"
+  local head
+  head=$(head -c 16 "$file" 2>/dev/null | tr -d '\0')
+  # PNG:  89 50 4E 47
+  # JPEG: FF D8 FF
+  # GIF:  47 49 46
+  # WebP: RIFF .... WEBP
+  if [[ "$head" == $'\x89PNG'* ]]; then return 0; fi
+  if [[ "$head" == $'\xFF\xD8\xFF'* ]]; then return 0; fi
+  if [[ "$head" == 'GIF'* ]]; then return 0; fi
+  if [[ "$head" == 'RIFF'*'WEBP'* ]]; then return 0; fi
+  return 1
+}
 
 for entry in "${CENTRES[@]}"; do
   IFS='|' read -r slug url <<< "$entry"
   local_file="$IMAGES_DIR/${slug}.png"
   tmp_file="$TMP_DIR/${slug}.png"
 
-  if curl -fsSL --retry 3 --max-time 60 -o "$tmp_file" "$url"; then
-    if [[ -f "$local_file" ]]; then
+  if curl -fsSL --retry 3 --max-time 60 -A "$USER_AGENT" -o "$tmp_file" "$url"; then
+    if ! is_valid_image "$tmp_file"; then
+      echo "  [ rejected ] $slug  (server returned non-image content, not updating)"
+      rejected=$((rejected + 1))
+    elif [[ -f "$local_file" ]]; then
       local_hash=$(sha256sum "$local_file" | awk '{print $1}')
       new_hash=$(sha256sum "$tmp_file" | awk '{print $1}')
       if [[ "$local_hash" == "$new_hash" ]]; then
@@ -73,7 +102,7 @@ for entry in "${CENTRES[@]}"; do
 done
 
 echo "=============================================="
-echo " Summary:  $changed updated / $unchanged unchanged / $failed failed"
+echo " Summary:  $changed updated / $unchanged unchanged / $rejected rejected / $failed failed"
 echo " Finished: $(date)"
 echo "=============================================="
 
@@ -84,7 +113,7 @@ echo "$SYNC_DATE_ISO" > "$SCRIPT_DIR/.last-sync"
 
 # Inject the human-readable timestamp into index.html
 if [ -f "$SCRIPT_DIR/index.html" ] && command -v sed >/dev/null 2>&1; then
-  sed -i "s|Last synced: [^<]*|Last synced: $SYNC_DATE_HUMAN|" "$SCRIPT_DIR/index.html"
+  sed -i "s|Last checked: [^<]*|Last checked: $SYNC_DATE_HUMAN|" "$SCRIPT_DIR/index.html"
 fi
 
 echo ""

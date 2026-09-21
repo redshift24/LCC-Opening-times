@@ -29,7 +29,16 @@ A single, unified webpage displaying the opening times for **all 8 London Climbi
 
 - Each centre's opening times are displayed as the **original image** from the [London Climbing Centres website](https://londonclimbingcentres.co.uk/). These images live in the `images/` directory.
 - The **centre name** is clearly shown above each image, with a coloured left-border stripe and acronym badge using that centre's brand colour from the LCC website.
-- `sync-images.sh` downloads each image, compares it (SHA256 hash) against the local copy, and replaces it only if the source has changed. It also updates the "Last synced" timestamp displayed on the webpage.
+- `sync-images.sh` downloads each image, compares it (SHA256 hash) against the local copy, and replaces it only if the source has changed. It also updates the "Last checked" timestamp displayed on the webpage.
+
+### Safety checks
+
+The LCC server sometimes serves an anti-bot captcha/redirect HTML page instead of the actual image. The sync script guards against this in two ways:
+
+1. **Magic-byte validation** — every download is checked to confirm it starts with a recognised image signature (PNG, JPEG, GIF, or WebP). HTML/text responses are rejected and the local copy is left untouched.
+2. **Browser User-Agent** — downloads use a desktop Chrome User-Agent to reduce the chance of triggering the anti-bot page.
+
+The GitHub Actions workflow also runs a separate verification step after syncing and **fails the run** if any image in `images/` is not a valid image file, so a broken sync never gets committed.
 
 ## Running the sync manually
 
